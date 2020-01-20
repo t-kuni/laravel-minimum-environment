@@ -1,0 +1,64 @@
+version: '3'
+services:
+  db:
+    build: db
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "33060:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
+    restart: always
+
+  app:
+    build:
+      context: app
+    restart: always
+    volumes:
+      - ${SRC_DIR}:/var/www/app
+
+  app-debug:
+    build:
+      context: app
+    command: php -v
+    volumes:
+      - ${SRC_DIR}:/var/www/app
+
+  scheduler:
+    build: app
+    entrypoint:
+      - "crond"
+      - "-f"
+      - "-l"
+      - "8"
+    volumes:
+      - ${SRC_DIR}:/var/www/app
+    restart: always
+
+  web:
+    build:
+      context: web
+      args:
+        - HOST=${HOST}
+        - DOLLAR=$$
+        - SSL_CERT_PATH=${SSL_CERT_PATH}
+        - SSL_CERT_KEY_PATH=${SSL_CERT_KEY_PATH}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${SRC_DIR}:/var/www/app
+      - ./certs:/etc/certs:ro
+    depends_on:
+      - app
+    restart: always
+
+  mta:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+    restart: always
+
+volumes:
+  db-data:
