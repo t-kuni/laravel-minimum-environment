@@ -6,8 +6,8 @@ RUN apk update \
 
 # Copy configs
 COPY default.conf.template /etc/nginx/conf.d/default.conf.template
-COPY site.conf.template    /etc/nginx/conf.d/site.conf.template
-COPY nginx.conf            /etc/nginx/nginx.conf
+COPY site.conf.template /etc/nginx/conf.d/site.conf.template
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Build configs
 ARG HOST
@@ -24,5 +24,15 @@ RUN /usr/bin/envsubst < /etc/nginx/conf.d/default.conf.template > /etc/nginx/con
 # Purge packages.
 RUN apk del --purge build-tools
 
-WORKDIR /var/www/app
+# Add user
+ARG APP_UID
+ARG APP_GID
+ENV APP_UID ${APP_UID}
+ENV APP_GID ${APP_GID}
+RUN adduser -u $APP_UID -g $APP_GID --disabled-password --gecos "" -s /sbin/nologin app
+
+RUN mkdir -p /var/www/app/storage/app/public \
+    && mkdir -p /var/www/app/public/storage
+RUN ln -s /var/www/app/storage/app/public /var/www/app/public/storage
+
 CMD exec nginx -g 'daemon off;'

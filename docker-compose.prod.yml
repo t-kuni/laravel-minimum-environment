@@ -3,10 +3,10 @@ services:
   db:
     container_name: ${COMPOSE_PROJECT_NAME}-db
     build: db
+    ports:
+      - "127.0.0.1:3306:3306"
     volumes:
       - db-data:/var/lib/mysql
-    ports:
-      - "33060:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=${DB_DATABASE}
@@ -18,27 +18,14 @@ services:
       context: app
       dockerfile: ${ENVIRONMENT}.Dockerfile
       args:
-        - ENV=local
         - CODE_REGISTRY=${CODE_REGISTRY}
         - APP_UID=${APP_UID}
         - APP_GID=${APP_GID}
     restart: always
     volumes:
-      - ${SRC_DIR}:/var/www/app
-
-  app-debug:
-    container_name: ${COMPOSE_PROJECT_NAME}-app-debug
-    build:
-      context: app
-      dockerfile: ${ENVIRONMENT}.Dockerfile
-      args:
-        - ENV=local
-        - CODE_REGISTRY=${CODE_REGISTRY}
-        - APP_UID=${APP_UID}
-        - APP_GID=${APP_GID}
-    command: php -v
-    volumes:
-      - ${SRC_DIR}:/var/www/app
+      - ./app/.env:/var/www/app/.env:ro
+      - ./app/google-app-credentials.json:/var/www/app/google-app-credentials.json:ro
+      - app-storage:/var/www/app/storage:rw
 
   scheduler:
     container_name: ${COMPOSE_PROJECT_NAME}-scheduler
@@ -46,7 +33,6 @@ services:
       context: app
       dockerfile: ${ENVIRONMENT}.Dockerfile
       args:
-        - ENV=local
         - CODE_REGISTRY=${CODE_REGISTRY}
         - APP_UID=${APP_UID}
         - APP_GID=${APP_GID}
@@ -59,14 +45,15 @@ services:
       - "-L"
       - "/dev/stdout"
     volumes:
-      - ${SRC_DIR}:/var/www/app
+      - ./app/.env:/var/www/app/.env:ro
+      - ./app/google-app-credentials.json:/var/www/app/google-app-credentials.json:ro
+      - app-storage:/var/www/app/storage:rw
     restart: always
 
   web:
     container_name: ${COMPOSE_PROJECT_NAME}-web
     build:
       context: web
-      dockerfile: ${ENVIRONMENT}.Dockerfile
       args:
         - CODE_REGISTRY=${CODE_REGISTRY}
         - HOST=${HOST}
@@ -79,12 +66,24 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ${SRC_DIR}:/var/www/app
-      - ./certs:/etc/certs:ro
+      - acme-challenge:/var/www/acme-challenge:ro
+      - certs:/etc/letsencrypt/:ro
+      - app-storage:/var/www/app/storage:ro
     depends_on:
       - app
     restart: always
 
+  certbot:
+    container_name: ${COMPOSE_PROJECT_NAME}-certbot
+    build: certbot
+    volumes:
+      - acme-challenge:/var/www/acme-challenge
+      - certs:/etc/letsencrypt/
+    command: ["0 3 * * * certbot renew -m ${SSL_CERT_EMAIL} --agree-tos --cert-name ${SSL_CERT_DOMAIN}"]
+    restart: always
+
 volumes:
+  app-storage:
   db-data:
+  acme-challenge:
   certs:
