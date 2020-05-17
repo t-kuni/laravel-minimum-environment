@@ -96,6 +96,8 @@ services:
     working_dir: "/var/www/app"
     volumes:
       - ${SRC_DIR}:/var/www/app
+    ports:
+      - "6001:6001"
     restart: always
 
 volumes:

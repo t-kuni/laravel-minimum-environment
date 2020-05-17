@@ -18,6 +18,8 @@ RUN docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-install -j$(nproc) mbstring \
     && docker-php-ext-install -j$(nproc) sockets  \
     && docker-php-ext-install -j$(nproc) zip
+RUN pecl install redis
+RUN docker-php-ext-enable redis
 
 # Purge build tools
 RUN apk del --purge build-tools
