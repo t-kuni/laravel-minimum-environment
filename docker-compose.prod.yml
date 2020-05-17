@@ -73,6 +73,11 @@ services:
       - app
     restart: always
 
+  kvs:
+    container_name: ${COMPOSE_PROJECT_NAME}-kvs
+    build: kvs
+    restart: always
+
   certbot:
     container_name: ${COMPOSE_PROJECT_NAME}-certbot
     build: certbot

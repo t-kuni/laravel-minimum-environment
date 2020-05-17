@@ -85,6 +85,19 @@ services:
       - app
     restart: always
 
+  kvs:
+    container_name: ${COMPOSE_PROJECT_NAME}-kvs
+    build: kvs
+    restart: always
+
+  socket.io:
+    container_name: ${COMPOSE_PROJECT_NAME}-socket.io
+    build: socket.io
+    working_dir: "/var/www/app"
+    volumes:
+      - ${SRC_DIR}:/var/www/app
+    restart: always
+
 volumes:
   db-data:
   certs:
